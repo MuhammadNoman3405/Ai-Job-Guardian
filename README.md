@@ -7,6 +7,8 @@
 ## 🚀 Project Goal
 The primary objective is to classify job advertisements as either **Authentic** or **Fraudulent**. Using a dataset of over 18,000 descriptions, the model analyzes textual patterns and metadata to protect users in the digital job market.
 
+
+
 ## 🛠️ Tech Stack
 - **Language**: Python 🐍
 - **Framework**: Streamlit (For the Web Interface)
@@ -16,7 +18,7 @@ The primary objective is to classify job advertisements as either **Authentic** 
 
 ## 🔗 Connect & Portfolio
 - **Portfolio Website**: [Explore My Projects](https://my-portfolio-website-six-ashen.vercel.app)
-- **LinkedIn**: [Connect with Muhammad Noman](https://www.linkedin.com/in/muhammad-noman-a219712b0)
+- **LinkedIn**: [Connect with Muhammad Noman](https://www.linkedin.com/in/muhammad-noman-a219712b0/)
 
 ---
-**Developed by Noman** *BSCS @ UET Taxila (5th Semester)*
+**Developed with ❤️ by Noman** *BSCS @ UET Taxila | Data Science & ML Enthusiast*
