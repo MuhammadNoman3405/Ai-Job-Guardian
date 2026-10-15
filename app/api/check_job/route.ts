@@ -115,11 +115,31 @@ async function assessCompanyCredibility(companyName: string) {
     try {
       const query = `${companyName} official site OR LinkedIn OR Twitter OR Instagram OR YouTube OR Facebook`;
       const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=10`;
-      const res = await fetch(url);
+
+      // 5-second fetch timeout to protect serverless performance
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
       if (res.ok) {
         const data = await res.json();
         const items = data.items || [];
-        const socialDomains = ["facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com"];
+        const socialDomains = ["facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com", "github.com", "tiktok.com"];
+
+        const commonSuffixes = new Set([
+          "inc", "corp", "corporation", "llc", "ltd", "limited", "co", "company",
+          "group", "holdings", "services", "technologies", "tech", "solutions",
+          "systems", "international", "global", "pvt", "gmbh", "sa", "ag"
+        ]);
+
+        // Strip corporate suffixes (e.g. "Google LLC" -> ["google"] matching google.com)
+        const cleanWords = companyName
+          .toLowerCase()
+          .split(/[\s,.-]+/)
+          .map((w) => w.trim())
+          .filter((w) => w.length > 2 && !commonSuffixes.has(w));
+
+        const targetWords =
+          cleanWords.length > 0
+            ? cleanWords
+            : companyName.toLowerCase().split(/[\s,.-]+/).filter((w) => w.length > 2);
 
         for (const item of items) {
           const itemUrl: string = item.link || "";
@@ -131,11 +151,14 @@ async function assessCompanyCredibility(companyName: string) {
             socialLinks.push(itemUrl);
           } else {
             const domain = urlLower.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-            const companyWords = companyName
-              .toLowerCase()
-              .split(/\s+/)
-              .filter((w) => w.length > 2);
-            if (companyWords.length > 0 && companyWords.every((w) => domain.includes(w))) {
+
+            // Match if domain contains the primary brand name
+            const isMatch =
+              targetWords.length > 0
+                ? targetWords.some((w) => domain.includes(w))
+                : domain.includes(companyName.toLowerCase().replace(/[^a-z0-9]/g, ""));
+
+            if (isMatch) {
               if (!website) website = itemUrl;
             } else {
               otherLinks.push(itemUrl);

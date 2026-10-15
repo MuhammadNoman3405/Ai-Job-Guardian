@@ -32,7 +32,17 @@ def _google_company_search(company_name, api_key, cse_id, num_results=10):
             num=num_results
         ).execute()
 
-        social_domains = ["facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com"]
+        social_domains = ["facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com", "github.com", "tiktok.com"]
+
+        common_suffixes = {
+            "inc", "corp", "corporation", "llc", "ltd", "limited", "co", "company",
+            "group", "holdings", "services", "technologies", "tech", "solutions",
+            "systems", "international", "global", "pvt", "gmbh", "sa", "ag"
+        }
+
+        # Filter out common corporate suffixes
+        clean_words = [w.lower() for w in re.split(r'[\s,.-]+', company_name) if len(w) > 2 and w.lower() not in common_suffixes]
+        target_words = clean_words if clean_words else [w.lower() for w in re.split(r'[\s,.-]+', company_name) if len(w) > 2]
 
         for item in res.get("items", []):
             url = item.get("link", "")
@@ -49,8 +59,8 @@ def _google_company_search(company_name, api_key, cse_id, num_results=10):
             # Candidate for official website
             else:
                 domain = re.sub(r"https?://(www\.)?", "", url_lower).split("/")[0]
-                company_words = [w.lower() for w in company_name.split() if len(w) > 2]
-                if company_words and all(word in domain for word in company_words):
+                is_match = any(word in domain for word in target_words) if target_words else re.sub(r'[^a-zA-Z0-9]', '', company_name.lower()) in domain
+                if is_match:
                     website_url = website_url or url
                 else:
                     other_links.append(url)
