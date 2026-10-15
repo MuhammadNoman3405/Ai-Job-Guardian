@@ -30,13 +30,13 @@ def final_job_real_probability(
 
     if weights is None:
         weights = {
-            "description": 0.4,
-            "company": 0.4,
-            "platform": 0.2
+            "description": 0.70,
+            "company": 0.20,
+            "platform": 0.10
         }
 
     company_score_norm = company_credibility_score / 100.0
-    description_real_prob = 1 - description_fake_prob
+    description_real_prob = 1.0 - description_fake_prob
 
     prob_real = (
         weights["description"] * description_real_prob +
@@ -44,7 +44,13 @@ def final_job_real_probability(
         weights["platform"] * platform_trust_score
     )
 
-    return max(0.0, min(1.0, prob_real))
+    # Safety Constraint: high fake description overrides platform trust
+    if description_fake_prob >= 0.75:
+        prob_real = min(prob_real, 1.0 - description_fake_prob)
+    elif description_fake_prob >= 0.50:
+        prob_real = min(prob_real, 0.45)
+
+    return max(0.02, min(0.98, prob_real))
 
 
 def analyze_job_post(

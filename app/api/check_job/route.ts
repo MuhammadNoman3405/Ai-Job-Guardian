@@ -170,13 +170,9 @@ async function assessCompanyCredibility(companyName: string) {
       console.warn("Google Custom Search error:", err);
     }
   } else {
-    // Graceful fallback heuristic when Google Search API credentials are not set
-    const sanitized = companyName.trim();
-    if (sanitized.length > 2) {
-      const slug = sanitized.toLowerCase().replace(/[^a-z0-9]/g, "");
-      website = `https://www.${slug}.com`;
-      linkedin = `https://www.linkedin.com/company/${slug}`;
-    }
+    // When Google Search API credentials are not configured, do not fabricate fake links
+    website = null;
+    linkedin = null;
   }
 
   let score = 0;
@@ -194,7 +190,7 @@ async function assessCompanyCredibility(companyName: string) {
 
   score = Math.max(0, Math.min(100, score));
 
-  let status = "Fake / Highly Suspicious";
+  let status = "Unverified / Highly Suspicious";
   if (score >= 70) status = "Credible";
   else if (score >= 40) status = "Suspicious";
 
@@ -238,16 +234,37 @@ function finalJobRealProbability(
   descriptionFakeProb: number,
   companyCredibilityScore: number,
   platformTrustScore: number
-): number {
+): { probReal: number; probFake: number; verdict: string } {
   const companyScoreNorm = companyCredibilityScore / 100.0;
   const descriptionRealProb = 1.0 - descriptionFakeProb;
 
-  const probReal =
-    0.4 * descriptionRealProb +
-    0.4 * companyScoreNorm +
-    0.2 * platformTrustScore;
+  // The ML description model is the primary fraud indicator (70% weight)
+  // Company credibility (20% weight), Platform trust (10% weight)
+  let probReal =
+    0.70 * descriptionRealProb +
+    0.20 * companyScoreNorm +
+    0.10 * platformTrustScore;
 
-  return Math.max(0.0, Math.min(1.0, probReal));
+  // Safety Constraint: If description has high fake probability (scam text),
+  // the platform or unverified company must NOT override it into looking authentic.
+  if (descriptionFakeProb >= 0.75) {
+    probReal = Math.min(probReal, 1.0 - descriptionFakeProb);
+  } else if (descriptionFakeProb >= 0.50) {
+    probReal = Math.min(probReal, 0.45);
+  }
+
+  // Cap bounds
+  probReal = Math.max(0.02, Math.min(0.98, probReal));
+  const probFake = 1.0 - probReal;
+
+  let verdict = "SUSPICIOUS";
+  if (probFake >= 0.60) {
+    verdict = "FRAUDULENT / HIGH RISK";
+  } else if (probReal >= 0.70) {
+    verdict = "AUTHENTIC / CREDIBLE";
+  }
+
+  return { probReal, probFake, verdict };
 }
 
 // --- Next.js Route Handler ---
@@ -286,19 +303,21 @@ export async function POST(req: NextRequest) {
     // Step 3: Model 3 - Platform Trust Score
     const platformTrustScore = platformCredibility(platform_name);
 
-    // Step 4: Final Ensemble Probability
-    const probReal = finalJobRealProbability(
+    // Step 4: Final Ensemble Probability & Verdict
+    const { probReal, probFake, verdict } = finalJobRealProbability(
       descriptionFakeProb,
       companyInfo.credibility_score,
       platformTrustScore
     );
 
     return NextResponse.json({
+      verdict,
       description_fake_prob: Math.round(descriptionFakeProb * 100) / 100,
+      probability_job_real: Math.round(probReal * 100) / 100,
+      probability_job_fake: Math.round(probFake * 100) / 100,
       company_credibility_score: companyInfo.credibility_score,
       company_info: companyInfo,
       platform_trust_score: platformTrustScore,
-      probability_job_real: Math.round(probReal * 100) / 100,
     });
   } catch (error: any) {
     console.error("API error in check_job:", error);

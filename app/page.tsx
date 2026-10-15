@@ -221,8 +221,63 @@ export default function JobDetector() {
               <p style={{ color: "#f87171" }}>{result.error}</p>
             ) : (
               <>
-                <p><strong>Description Fake Probability:</strong> {(result.description_fake_prob * 100).toFixed(2)}%</p>
-                <p><strong>Probability Job is Real:</strong> {(result.probability_job_real * 100).toFixed(2)}%</p>
+                {/* Overall Verdict Banner */}
+                <div
+                  style={{
+                    padding: "12px 18px",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    fontWeight: "bold",
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    backgroundColor:
+                      result.probability_job_real < 0.4
+                        ? "rgba(239, 68, 68, 0.2)"
+                        : result.probability_job_real >= 0.7
+                        ? "rgba(34, 197, 94, 0.2)"
+                        : "rgba(245, 158, 11, 0.2)",
+                    border: `1px solid ${
+                      result.probability_job_real < 0.4
+                        ? "#ef4444"
+                        : result.probability_job_real >= 0.7
+                        ? "#22c55e"
+                        : "#f59e0b"
+                    }`,
+                    color:
+                      result.probability_job_real < 0.4
+                        ? "#fca5a5"
+                        : result.probability_job_real >= 0.7
+                        ? "#86efac"
+                        : "#fde68a",
+                  }}
+                >
+                  {result.probability_job_real < 0.4
+                    ? "🚨 HIGH RISK: LIKELY FRAUDULENT / SCAM POSTING"
+                    : result.probability_job_real >= 0.7
+                    ? "✅ AUTHENTIC: HIGH CREDIBILITY JOB POSTING"
+                    : "⚠️ SUSPICIOUS: PROCEED WITH CAUTION"}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "15px" }}>
+                  <div style={{ padding: "12px", borderRadius: "8px", backgroundColor: "#0f172a" }}>
+                    <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 5px 0" }}>OVERALL FAKE PROBABILITY</p>
+                    <p style={{ fontSize: "20px", fontWeight: "bold", margin: 0, color: result.probability_job_real < 0.5 ? "#ef4444" : "#22c55e" }}>
+                      {((result.probability_job_fake ?? (1 - result.probability_job_real)) * 100).toFixed(2)}%
+                    </p>
+                  </div>
+                  <div style={{ padding: "12px", borderRadius: "8px", backgroundColor: "#0f172a" }}>
+                    <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 5px 0" }}>OVERALL REAL PROBABILITY</p>
+                    <p style={{ fontSize: "20px", fontWeight: "bold", margin: 0, color: result.probability_job_real >= 0.5 ? "#22c55e" : "#ef4444" }}>
+                      {(result.probability_job_real * 100).toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+
+                <p style={{ color: "#cbd5e1" }}>
+                  <strong>Description Fake Probability:</strong> {(result.description_fake_prob * 100).toFixed(2)}%
+                </p>
 
                 <hr style={{ borderColor: "#334155", margin: "15px 0" }} />
 
