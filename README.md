@@ -11,19 +11,19 @@ The primary objective is to classify job advertisements as either **Authentic** 
 
 ## 🛠️ Tech Stack
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Vanilla CSS
-- **Backend & ML**: Next.js Serverless API Route + Python FastAPI (Vercel Serverless)
+- **Backend & ML**: Next.js Serverless API Route (`/api/check_job`) + Python FastAPI (`/backend`)
 - **Machine Learning**: Scikit-learn TF-IDF + Logistic Regression Ensemble
 - **External Intelligence**: Google Custom Search API (with automatic heuristic fallback)
 
 ---
 
-## ⚡ Deploying to Vercel (1-Click Deployment)
+## ⚡ Deploying to Vercel (Default 1-Click Deployment)
 
-You can deploy the entire full-stack application (frontend + ML backend) in a single Vercel project:
+The project is structured to deploy directly out of the box with zero custom configuration:
 
 1. **Import the repository** into [Vercel](https://vercel.com).
-2. In the deployment settings, configure:
-   - **Root Directory**: `Ai Jobs/AI frontend`
+2. Keep the default settings:
+   - **Root Directory**: `./` (Default)
    - **Framework Preset**: Next.js
 3. *(Optional)* Add Environment Variables for live Google Company Search:
    - `GOOGLE_API_KEY`: Your Google Custom Search API key
