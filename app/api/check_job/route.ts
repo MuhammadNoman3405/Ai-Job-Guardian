@@ -5,12 +5,12 @@ import modelData from "./model_data.json";
 const stopWordsSet = new Set(modelData.stop_words);
 
 // Model parameters
-const { intercept, text_len_coef, salary_anomaly_coef, vocab } = modelData as {
+const { intercept, text_len_coef, salary_anomaly_coef, vocab } = (modelData as unknown) as {
   intercept: number;
   text_len_coef: number;
   salary_anomaly_coef: number;
   stop_words: string[];
-  vocab: Record<string, [number, number, number]>; // [idx, idf, coef]
+  vocab: Record<string, number[]>; // [idx, idf, coef]
 };
 
 // --- Model 1: Description Fake Probability ---
