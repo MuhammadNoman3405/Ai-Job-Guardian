@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "job_check_api.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "job_check_api.py"
+    }
+  ]
+}

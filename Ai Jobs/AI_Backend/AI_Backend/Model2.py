@@ -1,75 +1,75 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 # model2_company_credibility.py
 # Interface for Company Credibility Model (Inference Only)
 
 import re
-#from googleapiclient.discovery import build
-from googleapiclient.discovery import build
-
-# ==============================
-# Internal Helpers
-# ==============================
 
 def _google_company_search(company_name, api_key, cse_id, num_results=10):
     """
     Search for a company's official website, LinkedIn, and social media pages
-    using Google Custom Search API. Only LinkedIn + website are considered reliable.
+    using Google Custom Search API. If credentials are missing, uses heuristic fallback.
     
     Returns:
         tuple: (website_url, linkedin_url, other_links)
     """
-    service = build("customsearch", "v1", developerKey=api_key)
-    res = service.cse().list(
-        q=f"{company_name} official site OR LinkedIn OR Twitter OR Instagram OR YouTube OR Facebook",
-        cx=cse_id,
-        num=num_results
-    ).execute()
-
     website_url = None
     linkedin_url = None
     other_links = []
 
-    social_domains = ["facebook.com", "twitter.com", "instagram.com", "youtube.com"]
+    if not api_key or not cse_id:
+        # Fallback heuristic when keys are not configured
+        cleaned = re.sub(r'[^a-zA-Z0-9]', '', company_name.lower())
+        if cleaned:
+            website_url = f"https://www.{cleaned}.com"
+            linkedin_url = f"https://www.linkedin.com/company/{cleaned}"
+        return website_url, linkedin_url, other_links
 
-    for item in res.get("items", []):
-        url = item["link"]
-        url_lower = url.lower()
+    try:
+        from googleapiclient.discovery import build
+        service = build("customsearch", "v1", developerKey=api_key)
+        res = service.cse().list(
+            q=f"{company_name} official site OR LinkedIn OR Twitter OR Instagram OR YouTube OR Facebook",
+            cx=cse_id,
+            num=num_results
+        ).execute()
 
-        # LinkedIn company page
-        if "linkedin.com/company" in url_lower and not linkedin_url:
-            linkedin_url = url
+        social_domains = ["facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com"]
 
-        # Social media pages
-        elif any(social in url_lower for social in social_domains):
-            other_links.append(url)
+        for item in res.get("items", []):
+            url = item.get("link", "")
+            url_lower = url.lower()
 
-        # Candidate for official website
-        else:
-            domain = re.sub(r"https?://(www\.)?", "", url_lower).split("/")[0]
-            company_words = [w.lower() for w in company_name.split() if len(w) > 2]  # ignore short words
-            if all(word in domain for word in company_words):
-                website_url = website_url or url
-            else:
+            # LinkedIn company page
+            if "linkedin.com/company" in url_lower and not linkedin_url:
+                linkedin_url = url
+
+            # Social media pages
+            elif any(social in url_lower for social in social_domains):
                 other_links.append(url)
+
+            # Candidate for official website
+            else:
+                domain = re.sub(r"https?://(www\.)?", "", url_lower).split("/")[0]
+                company_words = [w.lower() for w in company_name.split() if len(w) > 2]
+                if company_words and all(word in domain for word in company_words):
+                    website_url = website_url or url
+                else:
+                    other_links.append(url)
+    except Exception as e:
+        print(f"Google Search API warning: {e}")
+        cleaned = re.sub(r'[^a-zA-Z0-9]', '', company_name.lower())
+        if cleaned:
+            website_url = f"https://www.{cleaned}.com"
+            linkedin_url = f"https://www.linkedin.com/company/{cleaned}"
 
     return website_url, linkedin_url, other_links
 
 
-# ==============================
-# Public Interface Function
-# ==============================
 def assess_company_credibility(company_name: str,
-                               api_key: str,
-                               cse_id: str) -> dict:
+                               api_key: str = None,
+                               cse_id: str = None) -> dict:
     """
     Returns company credibility score (0–100) and metadata.
     """
-
     score = 0
 
     website, linkedin, other_links = _google_company_search(
@@ -91,7 +91,7 @@ def assess_company_credibility(company_name: str,
     # Social presence
     social_links = [
         link for link in other_links
-        if any(s in link for s in ["facebook.com", "twitter.com", "instagram.com", "youtube.com"])
+        if any(s in link for s in ["facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com"])
     ]
     num_social_links = len(social_links)
 
@@ -99,11 +99,9 @@ def assess_company_credibility(company_name: str,
         score += 25
     elif num_social_links == 1:
         score += 10
-# else: 0 links → add nothing
-
 
     # Multiple sources
-    if num_sources >= 3:
+    if num_sources >= 2:
         score += 15
 
     score = max(0, min(score, 100))
@@ -124,10 +122,3 @@ def assess_company_credibility(company_name: str,
         "num_sources": num_sources,
         "social_links": social_links
     }
-
-
-# In[ ]:
-
-
-
-

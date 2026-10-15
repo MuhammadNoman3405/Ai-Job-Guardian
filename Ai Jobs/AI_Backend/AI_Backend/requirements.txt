@@ -1,11 +1,8 @@
 fastapi
-uvicorn[standard]
-gunicorn
-pydantic
-numpy
-pandas
+uvicorn
 scikit-learn==1.7.2
 scipy
 joblib
 google-api-python-client
 requests
+python-dotenv

@@ -1,1 +1,1 @@
-web: gunicorn -k uvicorn.workers.UvicornWorker job_check_api:app --bind 0.0.0.0:$PORT
+web: uvicorn job_check_api:app --host 0.0.0.0 --port $PORT

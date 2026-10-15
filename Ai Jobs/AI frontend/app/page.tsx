@@ -48,7 +48,11 @@ export default function JobDetector() {
     };
 
     try {
-      const response = await fetch("https://web-production-1203.up.railway.app/check_job", {
+      const endpoint = process.env.NEXT_PUBLIC_API_URL
+        ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/check_job`
+        : "/api/check_job";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
